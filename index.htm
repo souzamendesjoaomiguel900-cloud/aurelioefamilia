@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Controle de Gastos — Aurelio e Familia</title>
+  <style>
+    :root{
+      --navy:#01203a;
+      --navy-2:#023047;
+      --blue-1:#0b5f86;
+      --blue-2:#1673a3;
+      --accent:#79b7d3;
+      --bg:#f4f8fb;
+      --card:#eaf4fb;
+      --danger:#d9534f;
+      --success:#2ca02c;
+      --glass: rgba(255,255,255,0.06);
+      --max-width:1200px;
+    }
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,var(--bg),#e6f0f7);color:var(--navy);display:flex;align-items:flex-start;justify-content:center;padding:28px}
+    .app{width:100%;max-width:var(--max-width);}    
+    .card{background:linear-gradient(180deg,var(--card),white);border-radius:12px;padding:18px;box-shadow:0 6px 24px rgba(1,32,58,0.12);}    
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    header h1{margin:0;color:var(--navy);font-size:20px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,var(--navy),var(--blue-1));display:flex;align-items:center;justify-content:center;color:white;font-weight:800}
+
+    .top-controls{display:flex;gap:12px;align-items:center}
+    select,input[type="number"],input[type="date"],input[type="text"]{padding:8px 10px;border-radius:8px;border:1px solid rgba(1,32,58,0.08);min-width:160px}
+
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:14px}
+    .left .form-row{display:flex;gap:10px;margin-bottom:8px}
+    .form-row .field{flex:1;}
+    label{font-size:12px;display:block;margin-bottom:6px;color:rgba(1,32,58,0.8)}
+    .btn{padding:8px 12px;border-radius:8px;border:none;background:var(--navy);color:white;cursor:pointer}
+    .btn.secondary{background:transparent;color:var(--navy);border:1px solid rgba(1,32,58,0.08)}
+    .btn.warn{background:var(--danger)}
+
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid rgba(1,32,58,0.06);text-align:left;font-size:14px}
+    th{font-size:13px;color:rgba(1,32,58,0.9)}
+
+    .summary{background:linear-gradient(180deg, rgba(1,32,58,0.04), transparent);padding:12px;border-radius:10px}
+    .progress-wrap{margin-top:10px}
+    .progress{height:18px;background:rgba(1,32,58,0.08);border-radius:12px;overflow:hidden}
+    .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));}
+    .category-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .category-item{padding:8px;border-radius:8px;background:rgba(255,255,255,0.6);display:flex;justify-content:space-between;align-items:center}
+
+    .right .panel{margin-bottom:12px}
+    .muted{font-size:13px;color:rgba(1,32,58,0.6)}
+    footer{margin-top:18px;text-align:center;color:rgba(1,32,58,0.5);font-size:13px}
+
+    /* Login overlay */
+    .login-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,rgba(1,32,58,0.45),rgba(1,32,58,0.65));backdrop-filter:blur(4px);}
+    .login-box{width:400px;background:linear-gradient(180deg,#022b42, #01324a);color:white;padding:22px;border-radius:14px;box-shadow:0 12px 40px rgba(1,32,58,0.5)}
+    .login-box h2{margin:0 0 10px}
+    .hint{font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:12px}
+
+    .small{font-size:12px}
+
+    @media(max-width:980px){.grid{grid-template-columns:1fr}.right{order:2}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card" id="mainCard">
+      <header>
+        <div class="brand"><div class="logo">GC</div><h1>Controle de Gastos — Aurelio e Familia</h1></div>
+        <div class="top-controls">
+          <div>
+            <label for="monthSelect">Mês</label>
+            <select id="monthSelect"></select>
+          </div>
+          <div>
+            <label for="yearSelect">Ano</label>
+            <select id="yearSelect"></select>
+          </div>
+          <button class="btn" id="backupBtn">Backup</button>
+          <button class="btn secondary" id="restoreBtn">Restaurar</button>
+        </div>
+      </header>
+
+      <div class="grid">
+        <div class="left">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <strong>Adicionar gasto</strong>
+              <div class="muted">Limite mensal: R$ <span id="limitAmount">10.000,00</span></div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Data</label>
+                <input type="date" id="dateInput">
+              </div>
+              <div class="field">
+                <label>Valor (R$)</label>
+                <input type="number" id="valueInput" step="0.01" min="0">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Categoria</label>
+                <select id="categorySelect"></select>
+              </div>
+              <div class="field">
+                <label>Descrição (opcional)</label>
+                <input type="text" id="descInput" placeholder="Ex: Almoço com clientes">
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+              <button class="btn secondary" id="clearBtn">Limpar</button>
+              <button class="btn" id="saveBtn">Salvar</button>
+            </div>
+
+            <table id="entriesTable">
+              <thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="right">
+          <div class="panel card summary">
+            <div style="display:flex;justify-content:space-between;align-items:end">
+              <div>
+                <div class="muted">Total gasto no mês</div>
+                <div style="font-size:22px;font-weight:700">R$ <span id="monthlyTotal">0,00</span></div>
+              </div>
+              <div style="text-align:right">
+                <div class="muted">Limite</div>
+                <div style="font-weight:700">R$ 10.000,00</div>
+              </div>
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress" aria-hidden><i id="progressBar"></i></div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px"><span id="progressPercent">0%</span><span id="remaining">R$ 10.000,00 restantes</span></div>
+            </div>
+
+            <div style="margin-top:12px">
+              <div class="muted">Gastos por categoria</div>
+              <div class="category-list" id="categoryTotals"></div>
+            </div>
+          </div>
+
+          <div class="panel card" style="padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <strong>Ferramentas</strong>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn" id="exportAllBtn">Exportar todos meses</button>
+              <button class="btn secondary" id="clearMonthBtn">Limpar este mês</button>
+              <button class="btn warn" id="deleteAllBtn">Apagar todos dados</button>
+            </div>
+          </div>
+
+          <div class="panel card" style="padding:12px">
+            <div class="muted">Observações</div>
+            <div style="margin-top:6px;font-size:13px">Os dados são salvos localmente no seu navegador (localStorage). Use Backup para exportar um arquivo JSON e Restaurar para importar.</div>
+          </div>
+        </aside>
+      </div>
+
+      <footer>Feito para você — sugestões: multiusuário, armazenamento na nuvem, encriptação dos dados.</footer>
+    </div>
+  </div>
+
+  <!-- Login overlay -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <h2>Entrar — Controle de Gastos</h2>
+      <div class="hint">Digite a senha para acessar o sistema.</div>
+      <input id="pwInput" type="password" placeholder="Senha" style="width:100%;padding:10px;border-radius:8px;border:none;margin-bottom:12px">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn secondary" id="showHint">?</button>
+        <button class="btn" id="loginBtn">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="fileInput" type="file" accept="application/json" style="display:none">
+
+  <script>
+    // === Configurações iniciais ===
+    const PASSWORD = 'Mabi1408'; // senha pedida
+    const MONTH_LIMIT = 10000.00;
+    const CATEGORIES = [
+      'Churrascaria','Gasolina','Merenda','Mercantil','Cartões','Escola','Oficina','Contas - Água','Contas - Luz','Contas - Internet','Outros'
+    ];
+
+    // DOM
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    const categorySelect = document.getElementById('categorySelect');
+    const dateInput = document.getElementById('dateInput');
+    const valueInput = document.getElementById('valueInput');
+    const descInput = document.getElementById('descInput');
+    const saveBtn = document.getElementById('saveBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const entriesTable = document.querySelector('#entriesTable tbody');
+    const monthlyTotalEl = document.getElementById('monthlyTotal');
+    const categoryTotalsEl = document.getElementById('categoryTotals');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const remainingEl = document.getElementById('remaining');
+    const backupBtn = document.getElementById('backupBtn');
+    const restoreBtn = document.getElementById('restoreBtn');
+    const exportAllBtn = document.getElementById('exportAllBtn');
+    const clearMonthBtn = document.getElementById('clearMonthBtn');
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const loginOverlay = document.getElementById('loginOverlay');
+    const loginBtn = document.getElementById('loginBtn');
+    const pwInput = document.getElementById('pwInput');
+    const showHintBtn = document.getElementById('showHint');
+    const fileInput = document.getElementById('fileInput');
+
+    // Inicializa selects
+    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    function populateMonths(){
+      monthSelect.innerHTML = '';
+      monthNames.forEach((m,i)=>{
+        const opt = document.createElement('option'); opt.value = i+1; opt.textContent = m; monthSelect.appendChild(opt);
+      })
+    }
+    function populateYears(){
+      yearSelect.innerHTML = '';
+      const current = new Date().getFullYear();
+      for(let y=current-5;y<=current+2;y++){const o=document.createElement('option');o.value=y;o.textContent=y;yearSelect.appendChild(o)}
+    }
+    function populateCategories(){
+      categorySelect.innerHTML='';
+      CATEGORIES.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;categorySelect.appendChild(o)})
+    }
+
+    populateMonths(); populateYears(); populateCategories();
+    // set defaults
+    const now = new Date(); monthSelect.value = now.getMonth()+1; yearSelect.value = now.getFullYear(); dateInput.valueAsDate = now;
+
+    // storage key helpers (usamos mês+ano para separar)
+    function keyFor(m,y){ return `expenses-${String(y)}-${String(m).padStart(2,'0')}` }
+
+    // Carrega dados do mês
+    function loadMonth(){
+      const k = keyFor(monthSelect.value, yearSelect.value);
+      const raw = localStorage.getItem(k);
+      let data = raw? JSON.parse(raw) : [];
+      renderEntries(data);
+      updateSummary(data);
+    }
+
+    function saveMonthData(data){
+      const k = keyFor(monthSelect.value, yearSelect.value);
+      localStorage.setItem(k, JSON.stringify(data));
+    }
+
+    function renderEntries(entries){
+      entriesTable.innerHTML = '';
+      entries.sort((a,b)=> new Date(a.date) - new Date(b.date));
+      for(const [i,e] of entries.entries()){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${e.date}</td><td>${e.category}</td><td>${escapeHtml(e.desc||'')}</td><td>R$ ${formatNumber(e.value)}</td><td><button data-index="${i}" class="btn secondary">Excluir</button></td>`;
+        entriesTable.appendChild(tr);
+      }
+      // attach delete handlers
+      entriesTable.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', (ev)=>{
+        const idx = Number(btn.dataset.index);
+        deleteEntry(idx);
+      }));
+    }
+
+    function getCurrentData(){
+      const k = keyFor(monthSelect.value, yearSelect.value);
+      const raw = localStorage.getItem(k);
+      return raw? JSON.parse(raw) : [];
+    }
+
+    function addEntry(obj){
+      const data = getCurrentData(); data.push(obj); saveMonthData(data); renderEntries(data); updateSummary(data);
+      // alerta se passou do limite
+      const total = data.reduce((s,x)=>s+Number(x.value||0),0);
+      if(total > MONTH_LIMIT){
+        alert('ATENÇÃO: o total deste mês ultrapassou R$ ' + formatNumber(MONTH_LIMIT) + '.');
+      }
+    }
+
+    function deleteEntry(index){
+      const data = getCurrentData(); if(index<0||index>=data.length) return; data.splice(index,1); saveMonthData(data); renderEntries(data); updateSummary(data);
+    }
+
+    function updateSummary(entries){
+      const total = entries.reduce((s,e)=>s+Number(e.value||0),0);
+      monthlyTotalEl.textContent = formatNumber(total);
+      // progress
+      const percent = Math.min(100, Math.round((total/MONTH_LIMIT)*10000)/100);
+      progressBar.style.width = percent + '%';
+      progressPercent.textContent = percent + '%';
+      const remaining = Math.max(0, MONTH_LIMIT - total);
+      remainingEl.textContent = `R$ ${formatNumber(remaining)} restantes`;
+      if(total>MONTH_LIMIT){progressBar.style.background = 'linear-gradient(90deg,#d9534f,#c0392b)'} else {progressBar.style.background = ''}
+
+      // por categoria
+      const byCat = {};
+      CATEGORIES.forEach(c=>byCat[c]=0);
+      for(const e of entries){ if(byCat[e.category]===undefined) byCat[e.category]=0; byCat[e.category]+=Number(e.value||0) }
+      categoryTotalsEl.innerHTML = '';
+      for(const c of CATEGORIES){
+        const div = document.createElement('div'); div.className='category-item';
+        div.innerHTML = `<div>${c}</div><div>R$ ${formatNumber(byCat[c]||0)}</div>`;
+        categoryTotalsEl.appendChild(div);
+      }
+    }
+
+    // helpers
+    function formatNumber(v){
+      const n = Number(v||0);
+      return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+    function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;') }
+
+    // events
+    saveBtn.addEventListener('click', ()=>{
+      const date = dateInput.value; const value = Number(valueInput.value||0); const category = categorySelect.value; const desc = descInput.value || '';
+      if(!date){ alert('Informe a data.'); return }
+      if(!category){ alert('Selecione a categoria.'); return }
+      if(value<=0){ alert('Informe um valor maior que zero.'); return }
+      if(value > 1000000) { alert('Valor muito grande'); return }
+      addEntry({date, value: Number(value.toFixed(2)), category, desc});
+      clearForm();
+    });
+
+    clearBtn.addEventListener('click', clearForm);
+    function clearForm(){ dateInput.value = new Date().toISOString().slice(0,10); valueInput.value = ''; descInput.value = ''; categorySelect.selectedIndex = 0 }
+
+    monthSelect.addEventListener('change', loadMonth);
+    yearSelect.addEventListener('change', loadMonth);
+
+    // Backup / restore
+    backupBtn.addEventListener('click', ()=>{
+      const m = monthSelect.value, y = yearSelect.value; const k = keyFor(m,y); const raw = localStorage.getItem(k) || '[]';
+      const blob = new Blob([raw], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download = `backup-${y}-${String(m).padStart(2,'0')}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    restoreBtn.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', async (ev)=>{
+      const f = ev.target.files[0]; if(!f) return;
+      const text = await f.text();
+      try{
+        const arr = JSON.parse(text);
+        if(!Array.isArray(arr)){ alert('Arquivo inválido: JSON deve ser um array de entradas'); return }
+        const k = keyFor(monthSelect.value, yearSelect.value);
+        localStorage.setItem(k, JSON.stringify(arr)); loadMonth(); alert('Restaurado com sucesso para o mês selecionado.');
+      }catch(err){ alert('Erro ao ler o arquivo: '+err.message) }
+      fileInput.value='';
+    });
+
+    // Export all
+    exportAllBtn.addEventListener('click', ()=>{
+      const all = {};
+      for(const key in localStorage){ if(key.startsWith('expenses-')) all[key]=JSON.parse(localStorage.getItem(key)) }
+      const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download = `backup-all-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    clearMonthBtn.addEventListener('click', ()=>{
+      if(confirm('Limpar todos os dados do mês selecionado?')){ localStorage.removeItem(keyFor(monthSelect.value, yearSelect.value)); loadMonth(); }
+    });
+    deleteAllBtn.addEventListener('click', ()=>{
+      if(confirm('Apagar todos os dados salvos (TODOS os meses)? Esta ação é irreversível.')){
+        const keys = [];
+        for(const key in localStorage) if(key.startsWith('expenses-')) keys.push(key);
+        keys.forEach(k=>localStorage.removeItem(k)); loadMonth(); alert('Todos os dados apagados.');
+      }
+    });
+
+    // login
+    loginBtn.addEventListener('click', ()=>{
+      const pw = pwInput.value || '';
+      if(pw === PASSWORD){
+        sessionStorage.setItem('logged','1'); loginOverlay.style.display='none'; loadMonth();
+      } else { alert('Senha incorreta'); }
+    });
+    showHintBtn.addEventListener('click', ()=>{ alert('Senha fornecida nas instruções: Aurelio e Familia1408') });
+
+    // Check already logged in
+    if(sessionStorage.getItem('logged')){ loginOverlay.style.display='none'; loadMonth(); } else { loginOverlay.style.display='flex' }
+
+    // Initialize UI values for limit display
+    document.getElementById('limitAmount').textContent = formatNumber(MONTH_LIMIT);
+
+    // load initial
+    loadMonth();
+
+    // helper: on page load, ensure storage entries exist
+    window.addEventListener('storage', ()=>{ /* placeholder: could react to cross-tabs */ });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
